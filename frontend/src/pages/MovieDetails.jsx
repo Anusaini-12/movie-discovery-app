@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useWishlist } from "../context/WishlistContext";
+import api from "../api/axios";
 
 function MovieDetails() {
   const { id } = useParams();
@@ -22,19 +23,16 @@ function MovieDetails() {
         setLoading(true);
         setError("");
 
-        const response = await fetch(
-          `http://localhost:5000/api/movies/${id}`
-        );
+        const response = await api.get(`/api/movies/${id}`);
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch movie details");
-        }
-
-        const data = await response.json();
-
-        setMovie(data);
+        setMovie(response.data);
       } catch (error) {
-        setError(error.message);
+        console.error("Movie details error:", error);
+
+        setError(
+          error.response?.data?.message ||
+            "Failed to fetch movie details"
+        );
       } finally {
         setLoading(false);
       }

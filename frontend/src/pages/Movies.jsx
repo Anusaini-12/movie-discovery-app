@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import MovieCard from "../components/MovieCard";
 import MovieCardSkeleton from "../components/MovieCardSkeleton";
+import api from "../api/axios";
 
 function Movies() {
   const [query, setQuery] = useState("");
@@ -27,17 +28,14 @@ function Movies() {
   useEffect(() => {
     const fetchGenres = async () => {
       try {
-        const response = await fetch("http://localhost:5000/api/movies/genres");
+        const response = await api.get("/api/movies/genres");
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch genres");
-        }
-
-        const data = await response.json();
-
-        setGenres(data.genres);
+        setGenres(response.data.genres);
       } catch (error) {
-        console.error(error.message);
+        console.error(
+          "Failed to fetch genres:",
+          error.response?.data?.message || error.message
+        );
       }
     };
 
@@ -64,36 +62,28 @@ function Movies() {
       setSearchMode(false);
       setPage(requestedPage);
 
-      const params = new URLSearchParams();
-
-      if (selectedGenre) {
-        params.append("genre", selectedGenre);
-      }
-
-      params.append("sort", sort);
-      params.append("page", String(requestedPage));
-
-      const response = await fetch(
-        `http://localhost:5000/api/movies/discover?${params.toString()}`,
-        {
-          signal: controller.signal,
+      const response = await api.get("/api/movies/discover", {
+        params: {
+          ...(selectedGenre ? { genre: selectedGenre } : {}),
+          sort,
+          page: requestedPage,
         },
-      );
+        signal: controller.signal,
+      });
 
-      if (!response.ok) {
-        throw new Error("Failed to discover movies");
-      }
-
-      const data = await response.json();
+      const data = response.data;
 
       setMovies(data.results);
       setTotalPages(data.totalPages);
     } catch (error) {
-      if (error.name === "AbortError") {
+      if (error.code === "ERR_CANCELED") {
         return;
       }
 
-      setError(error.message);
+      setError(
+        error.response?.data?.message ||
+          "Failed to discover movies"
+      );
     } finally {
       if (!controller.signal.aborted) {
         setLoading(false);
@@ -121,29 +111,27 @@ function Movies() {
       setSearchMode(true);
       setPage(1);
 
-      const response = await fetch(
-        `http://localhost:5000/api/movies/search?query=${encodeURIComponent(
-          query,
-        )}&page=1`,
-        {
-          signal: controller.signal,
+      const response = await api.get("/api/movies/search", {
+        params: {
+          query: query.trim(),
+          page: 1,
         },
-      );
+        signal: controller.signal,
+      });
 
-      if (!response.ok) {
-        throw new Error("Failed to search movies");
-      }
-
-      const data = await response.json();
+      const data = response.data;
 
       setMovies(data.results);
       setTotalPages(data.totalPages);
     } catch (error) {
-      if (error.name === "AbortError") {
+      if (error.code === "ERR_CANCELED") {
         return;
       }
 
-      setError(error.message);
+      setError(
+        error.response?.data?.message ||
+          "Failed to search movies"
+      );
     } finally {
       if (!controller.signal.aborted) {
         setLoading(false);
@@ -170,30 +158,28 @@ function Movies() {
         setLoading(true);
         setError("");
 
-        const response = await fetch(
-          `http://localhost:5000/api/movies/search?query=${encodeURIComponent(
-            query,
-          )}&page=${newPage}`,
-          {
-            signal: controller.signal,
+        const response = await api.get("/api/movies/search", {
+          params: {
+            query: query.trim(),
+            page: newPage,
           },
-        );
+          signal: controller.signal,
+        });
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch search results");
-        }
-
-        const data = await response.json();
+        const data = response.data;
 
         setMovies(data.results);
         setPage(data.page);
         setTotalPages(data.totalPages);
       } catch (error) {
-        if (error.name === "AbortError") {
+        if (error.code === "ERR_CANCELED") {
           return;
         }
 
-        setError(error.message);
+        setError(
+          error.response?.data?.message ||
+            "Failed to fetch search results"
+        );
       } finally {
         if (!controller.signal.aborted) {
           setLoading(false);
@@ -300,7 +286,7 @@ function Movies() {
 
         {/* Loading */}
         {loading && (
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5">
             {Array.from({ length: 10 }).map((_, index) => (
               <MovieCardSkeleton key={index} />
             ))}
@@ -379,7 +365,7 @@ function Movies() {
               </span>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5">
               {movies.map((movie) => (
                 <MovieCard key={movie.id} movie={movie} />
               ))}

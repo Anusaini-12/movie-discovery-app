@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import api from "../api/axios";
 import MovieCard from "../components/MovieCard";
 
 function Home() {
@@ -10,19 +11,20 @@ function Home() {
   useEffect(() => {
     const fetchMovies = async () => {
       try {
-        const response = await fetch(
-          "http://localhost:5000/api/movies/popular?page=1",
-        );
+        const response = await api.get("/api/movies/popular", {
+          params: {
+            page: 1,
+          },
+        });
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch movies");
-        }
-
-        const data = await response.json();
-
-        setMovies(data.results);
+        setMovies(response.data.results);
       } catch (error) {
-        setError(error.message);
+        console.error("Failed to fetch popular movies:", error);
+
+        setError(
+          error.response?.data?.message ||
+            "Failed to fetch movies"
+        );
       } finally {
         setLoading(false);
       }
@@ -87,7 +89,6 @@ function Home() {
     <main className="min-h-screen overflow-hidden bg-[#05050a] text-white">
       {/* Hero Section */}
       <section className="relative overflow-hidden">
-        {/* Night sky glow */}
         <div className="pointer-events-none absolute -right-40 -top-40 h-[500px] w-[500px] rounded-full bg-purple-600/10 blur-3xl" />
 
         <div className="pointer-events-none absolute -left-40 top-40 h-[400px] w-[400px] rounded-full bg-blue-600/10 blur-3xl" />
@@ -131,7 +132,6 @@ function Home() {
           </div>
         </div>
 
-        {/* Bottom fade */}
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#05050a] to-transparent" />
       </section>
 
@@ -188,3 +188,4 @@ function Home() {
 }
 
 export default Home;
+

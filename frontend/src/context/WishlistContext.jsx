@@ -7,6 +7,8 @@ export function WishlistProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const API_URL = import.meta.env.VITE_API_URL;
+
   // Create/get a unique ID for this browser
   const getUserId = () => {
     let userId = localStorage.getItem("moviehub-user-id");
@@ -28,7 +30,7 @@ export function WishlistProvider({ children }) {
       const userId = getUserId();
 
       const response = await fetch(
-        `http://localhost:5000/api/wishlist?userId=${userId}`
+        `${API_URL}/api/wishlist?userId=${userId}`
       );
 
       if (!response.ok) {
@@ -57,21 +59,18 @@ export function WishlistProvider({ children }) {
 
       const userId = getUserId();
 
-      const response = await fetch(
-        "http://localhost:5000/api/wishlist",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            movieId: movie.id,
-            title: movie.title,
-            posterPath: movie.poster,
-            userId,
-          }),
-        }
-      );
+      const response = await fetch(`${API_URL}/api/wishlist`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          movieId: movie.id,
+          title: movie.title,
+          posterPath: movie.poster,
+          userId,
+        }),
+      });
 
       const data = await response.json();
 
@@ -103,7 +102,7 @@ export function WishlistProvider({ children }) {
       const userId = getUserId();
 
       const response = await fetch(
-        `http://localhost:5000/api/wishlist/${movieId}?userId=${userId}`,
+        `${API_URL}/api/wishlist/${movieId}?userId=${userId}`,
         {
           method: "DELETE",
         }
@@ -150,4 +149,3 @@ export function WishlistProvider({ children }) {
 export function useWishlist() {
   return useContext(WishlistContext);
 }
-
